@@ -1,7 +1,6 @@
 import React, { memo, useCallback, useState } from 'react';
 import { Trash2, Plus, Eye, EyeOff } from 'lucide-react';
 
-// Memoized input components
 const MemoizedFieldInput = memo(({ value, onChange, placeholder, className = "border rounded p-2" }) => (
   <input
     type="text"
@@ -34,18 +33,33 @@ const MemoizedCheckbox = memo(({ checked, onChange, label }) => (
   </label>
 ));
 
-const FieldBuilder = memo(({ 
-  group, 
-  groupIndex, 
-  field, 
-  fieldIndex, 
+const generateFieldName = (label) => {
+  return label
+    .toLowerCase()            // convert to lowercase
+    .replace(/\s+/g, '_')    // replace spaces with underscore
+    .replace(/[^a-z0-9_]/g, ''); // remove special characters except underscore
+};
+
+const FieldBuilder = memo(({
+  group,
+  groupIndex,
+  field,
+  fieldIndex,
   onUpdateField,
   onRemoveField,
   onAddCondition,
-  onRemoveCondition 
+  onRemoveCondition
 }) => {
   const handleFieldChange = useCallback((key, value) => {
-    onUpdateField(groupIndex, fieldIndex, { ...field, [key]: value });
+    if (key === 'label') {
+      onUpdateField(groupIndex, fieldIndex, { 
+        ...field, 
+        label: value,
+        name: generateFieldName(value)
+      });
+    } else {
+      onUpdateField(groupIndex, fieldIndex, { ...field, [key]: value });
+    }
   }, [groupIndex, fieldIndex, onUpdateField, field]);
 
   const handleConditionChange = useCallback((type, conditionIndex, key, value) => {
@@ -103,11 +117,6 @@ const FieldBuilder = memo(({
   return (
     <div className="border p-4 rounded-lg mb-4">
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <MemoizedFieldInput
-          value={field.name}
-          onChange={(value) => handleFieldChange('name', value)}
-          placeholder="Field name"
-        />
         <MemoizedFieldInput
           value={field.label}
           onChange={(value) => handleFieldChange('label', value)}
@@ -184,6 +193,15 @@ const FormBuilder = () => {
   const [previewMode, setPreviewMode] = useState(false);
   const [formValues, setFormValues] = useState({});
 
+  // Add handleImportJson function
+  const handleImportJson = useCallback((importedGroups) => {
+    setGroups(importedGroups);
+    // Reset form values when importing new structure
+    setFormValues({});
+    // Switch to builder mode to show the imported structure
+    setPreviewMode(false);
+  }, []);
+
   const addGroup = () => {
     setGroups([...groups, { name: `Group ${groups.length + 1}`, fields: [] }]);
   };
@@ -230,7 +248,7 @@ const FormBuilder = () => {
   }, []);
 
   const addCondition = useCallback((groupIndex, fieldIndex, type) => {
-    setGroups(prevGroups => {      
+    setGroups(prevGroups => {
       // Create new field object with updated conditions
       const updatedField = {
         ...prevGroups[groupIndex].fields[fieldIndex],
@@ -239,7 +257,7 @@ const FormBuilder = () => {
           { field: '', value: '', operator: 'equals' }
         ]
       };
-  
+
       // Create new groups array with updated field
       const newGroups = prevGroups.map((group, gIndex) => {
         if (gIndex === groupIndex) {
@@ -317,49 +335,55 @@ const FormBuilder = () => {
       </div>
 
       {previewMode ? (
-        <FormPreview 
+        <FormPreview
           groups={groups}
           formValues={formValues}
           onInputChange={handleInputChange}
         />
       ) : (
-        <div className="space-y-6">
-          {groups.map((group, groupIndex) => (
-            <div key={groupIndex} className="border p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-4">
-                <input
-                  type="text"
-                  value={group.name}
-                  onChange={(e) => {
-                    const newGroups = [...groups];
-                    newGroups[groupIndex].name = e.target.value;
-                    setGroups(newGroups);
-                  }}
-                  className="text-lg font-semibold border-none focus:outline-none"
-                />
-                <button
-                  onClick={() => addField(groupIndex)}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center"
-                >
-                  <Plus size={20} className="mr-1" /> Add Field
-                </button>
+        <>
+          <div className="space-y-6">
+            {groups.map((group, groupIndex) => (
+              <div key={groupIndex} className="border p-4 rounded-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <input
+                    type="text"
+                    value={group.name}
+                    onChange={(e) => {
+                      const newGroups = [...groups];
+                      newGroups[groupIndex].name = e.target.value;
+                      setGroups(newGroups);
+                    }}
+                    className="text-lg font-semibold border-none focus:outline-none"
+                  />
+                  <button
+                    onClick={() => addField(groupIndex)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center"
+                  >
+                    <Plus size={20} className="mr-1" /> Add Field
+                  </button>
+                </div>
+                {group.fields.map((field, fieldIndex) => (
+                  <FieldBuilder
+                    key={fieldIndex}
+                    group={group}
+                    groupIndex={groupIndex}
+                    field={field}
+                    fieldIndex={fieldIndex}
+                    onUpdateField={updateField}
+                    onRemoveField={removeField}
+                    onAddCondition={addCondition}
+                    onRemoveCondition={removeCondition}
+                  />
+                ))}
               </div>
-              {group.fields.map((field, fieldIndex) => (
-                <FieldBuilder
-                  key={fieldIndex}
-                  group={group}
-                  groupIndex={groupIndex}
-                  field={field}
-                  fieldIndex={fieldIndex}
-                  onUpdateField={updateField}
-                  onRemoveField={removeField}
-                  onAddCondition={addCondition}
-                  onRemoveCondition={removeCondition}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-2">Form preview:</h3>
+          </div>
+        </>
       )}
 
       {!previewMode && (
@@ -368,13 +392,13 @@ const FormBuilder = () => {
           <pre className="bg-gray-100 p-4 rounded-lg overflow-auto">
             {JSON.stringify(groups, null, 2)}
           </pre>
+          <JsonPreview onImport={handleImportJson} />
         </div>
       )}
     </div>
   );
 };
 
-// Move FormPreview outside the main component
 const FormPreview = memo(({ groups, formValues, onInputChange }) => {
   const checkConditions = useCallback((conditions, type) => {
     if (!conditions.length) return type === 'visible';
@@ -455,30 +479,52 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
   );
 });
 
-// JSON Preview Component to handle form data import
-const JsonPreview = ({ onImport }) => {
+const JsonPreview = memo(({ onImport }) => {
   const [jsonInput, setJsonInput] = useState('');
   const [error, setError] = useState('');
 
   const handleImport = () => {
     try {
       const parsedJson = JSON.parse(jsonInput);
+      // Validate that the JSON structure matches our expected format
+      if (!Array.isArray(parsedJson)) {
+        throw new Error('JSON must be an array of groups');
+      }
+
+      // Basic validation of the JSON structure
+      const isValid = parsedJson.every(group => {
+        return (
+          typeof group === 'object' &&
+          'name' in group &&
+          'fields' in group &&
+          Array.isArray(group.fields)
+        );
+      });
+
+      if (!isValid) {
+        throw new Error('Invalid form structure');
+      }
+
       onImport(parsedJson);
+      setJsonInput('');
       setError('');
     } catch (e) {
-      setError('Invalid JSON format');
+      setError(e.message || 'Invalid JSON format');
     }
   };
 
   return (
     <div className="mt-6 space-y-4">
-      <textarea
-        value={jsonInput}
-        onChange={(e) => setJsonInput(e.target.value)}
-        className="w-full h-40 p-2 border rounded-lg font-mono text-sm"
-        placeholder="Paste your form JSON here..."
-      />
-      {error && <p className="text-red-500">{error}</p>}
+      <div className="flex flex-col gap-2">
+        <label className="font-medium">Import Form Definition</label>
+        <textarea
+          value={jsonInput}
+          onChange={(e) => setJsonInput(e.target.value)}
+          className="w-full h-40 p-2 border rounded-lg font-mono text-sm"
+          placeholder="Paste your form JSON here..."
+        />
+      </div>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
       <button
         onClick={handleImport}
         className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -487,9 +533,8 @@ const JsonPreview = ({ onImport }) => {
       </button>
     </div>
   );
-};
+});
 
-// Main Form Builder Component with JSON import/export functionality
 const FormBuilderWithJson = () => {
   const [formDefinition, setFormDefinition] = useState({
     groups: [],
@@ -528,7 +573,7 @@ const FormBuilderWithJson = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
         <div>
           <h2 className="text-xl font-semibold mb-4">Form Builder</h2>
           <FormBuilder
@@ -536,16 +581,11 @@ const FormBuilderWithJson = () => {
             onChange={setFormDefinition}
           />
         </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Import JSON</h2>
-          <JsonPreview onImport={handleJsonImport} />
-        </div>
       </div>
     </div>
   );
 };
 
-// Validation utilities
 const validateField = (field, formValues) => {
   const errors = [];
 
@@ -591,7 +631,6 @@ const validateField = (field, formValues) => {
   return errors;
 };
 
-// Custom Hook for form validation
 const useFormValidation = (formDefinition, formValues) => {
   const [errors, setErrors] = useState({});
 
