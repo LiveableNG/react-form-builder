@@ -6,7 +6,7 @@ const MemoizedFieldInput = memo(({ value, onChange, placeholder, className = "bo
   <input
     type="text"
     placeholder={placeholder}
-    value={value}
+    value={value || ''}
     onChange={(e) => onChange(e.target.value)}
     className={className}
   />
@@ -48,18 +48,57 @@ const FieldBuilder = memo(({
     onUpdateField(groupIndex, fieldIndex, { ...field, [key]: value });
   }, [groupIndex, fieldIndex, onUpdateField, field]);
 
-  // const handleRemoveField = useCallback(() => {
-  //   onRemoveField(groupIndex, fieldIndex);
-  // }, [groupIndex, fieldIndex, onRemoveField]);
+  const handleConditionChange = useCallback((type, conditionIndex, key, value) => {
+    const newField = { ...field };
+    newField[type][conditionIndex] = {
+      ...newField[type][conditionIndex],
+      [key]: value
+    };
+    onUpdateField(groupIndex, fieldIndex, newField);
+  }, [field, groupIndex, fieldIndex, onUpdateField]);
 
-  // const handleAddCondition = useCallback((type) => {
-  //   onAddCondition(groupIndex, fieldIndex, type);
-  // }, [groupIndex, fieldIndex, onAddCondition]);
-
-  // const handleRemoveCondition = useCallback((type, conditionIndex) => {
-  //   onRemoveCondition(groupIndex, fieldIndex, type, conditionIndex);
-  // }, [groupIndex, fieldIndex, onRemoveCondition]);
-
+  const renderConditions = useCallback((type, title) => (
+    <div>
+      <h4 className="font-medium mb-2">{title}</h4>
+      {field[type].map((condition, conditionIndex) => (
+        <div key={`${type}-${conditionIndex}`} className="flex gap-2 mb-2">
+          <MemoizedFieldInput
+            value={condition.field}
+            onChange={(value) => handleConditionChange(type, conditionIndex, 'field', value)}
+            placeholder="Field name"
+            className="border rounded p-2 flex-1"
+          />
+          <MemoizedSelect
+            value={condition.operator}
+            onChange={(value) => handleConditionChange(type, conditionIndex, 'operator', value)}
+            options={<>
+              <option value="equals">Equals</option>
+              <option value="not_null">Not Null</option>
+            </>}
+            className="border rounded p-2"
+          />
+          <MemoizedFieldInput
+            value={condition.value}
+            onChange={(value) => handleConditionChange(type, conditionIndex, 'value', value)}
+            placeholder="Value"
+            className="border rounded p-2 flex-1"
+          />
+          <button
+            onClick={() => onRemoveCondition(groupIndex, fieldIndex, type, conditionIndex)}
+            className="p-2 text-red-500 hover:text-red-700"
+          >
+            <Trash2 size={20} />
+          </button>
+        </div>
+      ))}
+      <button
+        onClick={() => onAddCondition(groupIndex, fieldIndex, type)}
+        className="flex items-center text-blue-500 hover:text-blue-700"
+      >
+        <Plus size={20} className="mr-1" /> Add Condition
+      </button>
+    </div>
+  ), [field, groupIndex, fieldIndex, handleConditionChange, onAddCondition, onRemoveCondition]);
 
   return (
     <div className="border p-4 rounded-lg mb-4">
@@ -124,85 +163,8 @@ const FieldBuilder = memo(({
       </div>
 
       <div className="space-y-4">
-        <div>
-          <h4 className="font-medium mb-2">Required If Conditions</h4>
-          {field.required_if.map((condition, conditionIndex) => (
-            <div key={conditionIndex} className="flex gap-2 mb-2">
-              <MemoizedFieldInput
-                value={condition.field}
-                onChange={(value) => handleConditionChange('required_if', conditionIndex, 'field', value)}
-                placeholder="Field name"
-                className="border rounded p-2 flex-1"
-              />
-              <MemoizedSelect
-                value={condition.operator}
-                onChange={(value) => handleConditionChange('required_if', conditionIndex, 'operator', value)}
-                options={<>
-                  <option value="equals">Equals</option>
-                  <option value="not_null">Not Null</option>
-                </>}
-              />
-              <MemoizedFieldInput
-                value={condition.value}
-                onChange={(value) => handleConditionChange('required_if', conditionIndex, 'value', value)}
-                placeholder="Value"
-                className="border rounded p-2 flex-1"
-              />
-              <button
-                onClick={() => onRemoveCondition(groupIndex, fieldIndex, 'required_if', conditionIndex)}
-                className="p-2 text-red-500 hover:text-red-700"
-              >
-                <Trash2 size={20} />
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={() => onAddCondition(groupIndex, fieldIndex, 'required_if')}
-            className="flex items-center text-blue-500 hover:text-blue-700"
-          >
-            <Plus size={20} className="mr-1" /> Add Condition
-          </button>
-        </div>
-
-        <div>
-          <h4 className="font-medium mb-2">Visible If Conditions</h4>
-          {field.visible_if.map((condition, conditionIndex) => (
-            <div key={conditionIndex} className="flex gap-2 mb-2">
-              <MemoizedFieldInput
-                value={condition.field}
-                onChange={(value) => handleConditionChange('visible_if', conditionIndex, 'field', value)}
-                placeholder="Field name"
-                className="border rounded p-2 flex-1"
-              />
-              <MemoizedSelect
-                value={condition.operator}
-                onChange={(value) => handleConditionChange('visible_if', conditionIndex, 'operator', value)}
-                options={<>
-                  <option value="equals">Equals</option>
-                  <option value="not_null">Not Null</option>
-                </>}
-              />
-              <MemoizedFieldInput
-                value={condition.value}
-                onChange={(value) => handleConditionChange('visible_if', conditionIndex, 'value', value)}
-                placeholder="Value"
-                className="border rounded p-2 flex-1"
-              />
-              <button
-                onClick={() => onRemoveCondition(groupIndex, fieldIndex, 'visible_if', conditionIndex)}
-                className="p-2 text-red-500 hover:text-red-700"
-              >
-                <Trash2 size={20} />
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={() => onAddCondition(groupIndex, fieldIndex, 'visible_if')}
-            className="flex items-center text-blue-500 hover:text-blue-700"
-          >
-            <Plus size={20} className="mr-1" /> Add Condition
-          </button>
-        </div>
+        {renderConditions('required_if', 'Required If Conditions')}
+        {renderConditions('visible_if', 'Visible If Conditions')}
       </div>
 
       <div className="mt-4 flex justify-end">
@@ -268,19 +230,59 @@ const FormBuilder = () => {
   }, []);
 
   const addCondition = useCallback((groupIndex, fieldIndex, type) => {
-    setGroups(prevGroups => {
-      const newGroups = [...prevGroups];
-      const field = newGroups[groupIndex].fields[fieldIndex];
-      field[type].push({ field: '', value: '', operator: 'equals' });
+    setGroups(prevGroups => {      
+      // Create new field object with updated conditions
+      const updatedField = {
+        ...prevGroups[groupIndex].fields[fieldIndex],
+        [type]: [
+          ...prevGroups[groupIndex].fields[fieldIndex][type],
+          { field: '', value: '', operator: 'equals' }
+        ]
+      };
+  
+      // Create new groups array with updated field
+      const newGroups = prevGroups.map((group, gIndex) => {
+        if (gIndex === groupIndex) {
+          return {
+            ...group,
+            fields: group.fields.map((field, fIndex) => {
+              if (fIndex === fieldIndex) {
+                return updatedField;
+              }
+              return field;
+            })
+          };
+        }
+        return group;
+      });
       return newGroups;
     });
   }, []);
 
   const removeCondition = useCallback((groupIndex, fieldIndex, type, conditionIndex) => {
     setGroups(prevGroups => {
-      const newGroups = [...prevGroups];
-      const field = newGroups[groupIndex].fields[fieldIndex];
-      field[type].splice(conditionIndex, 1);
+      // Create new field object with updated conditions
+      const updatedField = {
+        ...prevGroups[groupIndex].fields[fieldIndex],
+        [type]: prevGroups[groupIndex].fields[fieldIndex][type].filter((_, index) => index !== conditionIndex)
+      };
+
+      // Create new groups array with updated field
+      const newGroups = prevGroups.map((group, gIndex) => {
+        if (gIndex === groupIndex) {
+          return {
+            ...group,
+            fields: group.fields.map((field, fIndex) => {
+              if (fIndex === fieldIndex) {
+                return updatedField;
+              }
+              return field;
+            })
+          };
+        }
+        return group;
+      });
+
       return newGroups;
     });
   }, []);
