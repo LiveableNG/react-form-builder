@@ -287,86 +287,9 @@ const FormBuilder = () => {
     });
   }, []);
 
-  const FormPreview = () => {
-    const checkConditions = (conditions, type) => {
-      if (!conditions.length) return type === 'visible';
-      return conditions.every(condition => {
-        const fieldValue = formValues[condition.field];
-        switch (condition.operator) {
-          case 'equals':
-            return fieldValue === condition.value;
-          case 'not_null':
-            return fieldValue != null && fieldValue !== '';
-          default:
-            return true;
-        }
-      });
-    };
-
-    const handleInputChange = (name, value) => {
-      setFormValues(prev => ({ ...prev, [name]: value }));
-    };
-
-    return (
-      <div className="space-y-6">
-        {groups.map((group, groupIndex) => (
-          <div key={groupIndex} className="border p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">{group.name}</h3>
-            <div className="space-y-4">
-              {group.fields.map((field, fieldIndex) => {
-                const isVisible = checkConditions(field.visible_if, 'visible');
-                const isRequired = field.required || checkConditions(field.required_if, 'required');
-
-                if (!isVisible) return null;
-
-                return (
-                  <div key={fieldIndex} className="space-y-2">
-                    <label className="block text-sm font-medium">
-                      {field.label}
-                      {isRequired && <span className="text-red-500">*</span>}
-                    </label>
-                    {field.type === 'select' ? (
-                      <select
-                        name={field.name}
-                        value={formValues[field.name] || ''}
-                        onChange={(e) => handleInputChange(field.name, e.target.value)}
-                        className="w-full border rounded p-2"
-                        required={isRequired}
-                        disabled={field.disabled}
-                        readOnly={field.readonly}
-                      >
-                        <option value="">Select an option</option>
-                        {field.options.map((option, i) => (
-                          <option key={i} value={option}>{option}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type={field.type}
-                        name={field.name}
-                        value={formValues[field.name] || ''}
-                        onChange={(e) => handleInputChange(field.name, e.target.value)}
-                        className="w-full border rounded p-2"
-                        required={isRequired}
-                        disabled={field.disabled}
-                        readOnly={field.readonly}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-        <button
-          onClick={() => console.log(formValues)}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Submit
-        </button>
-      </div>
-    );
-  };
+  const handleInputChange = useCallback((name, value) => {
+    setFormValues(prev => ({ ...prev, [name]: value }));
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -394,7 +317,11 @@ const FormBuilder = () => {
       </div>
 
       {previewMode ? (
-        <FormPreview />
+        <FormPreview 
+          groups={groups}
+          formValues={formValues}
+          onInputChange={handleInputChange}
+        />
       ) : (
         <div className="space-y-6">
           {groups.map((group, groupIndex) => (
@@ -446,6 +373,87 @@ const FormBuilder = () => {
     </div>
   );
 };
+
+// Move FormPreview outside the main component
+const FormPreview = memo(({ groups, formValues, onInputChange }) => {
+  const checkConditions = useCallback((conditions, type) => {
+    if (!conditions.length) return type === 'visible';
+    return conditions.every(condition => {
+      const fieldValue = formValues[condition.field];
+      switch (condition.operator) {
+        case 'equals':
+          return fieldValue === condition.value;
+        case 'not_null':
+          return fieldValue != null && fieldValue !== '';
+        default:
+          return true;
+      }
+    });
+  }, [formValues]);
+
+  return (
+    <div className="space-y-6">
+      {groups.map((group, groupIndex) => (
+        <div key={`group-${group.name}-${groupIndex}`} className="border p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-4">{group.name}</h3>
+          <div className="space-y-4">
+            {group.fields.map((field, fieldIndex) => {
+              const isVisible = checkConditions(field.visible_if, 'visible');
+              const isRequired = field.required || checkConditions(field.required_if, 'required');
+              const fieldId = `${group.name}-${field.name}-${fieldIndex}`;
+
+              if (!isVisible) return null;
+
+              return (
+                <div key={fieldId} className="space-y-2">
+                  <label htmlFor={fieldId} className="block text-sm font-medium">
+                    {field.label}
+                    {isRequired && <span className="text-red-500">*</span>}
+                  </label>
+                  {field.type === 'select' ? (
+                    <select
+                      id={fieldId}
+                      name={field.name}
+                      value={formValues[field.name] ?? ''}
+                      onChange={(e) => onInputChange(field.name, e.target.value)}
+                      className="w-full border rounded p-2"
+                      required={isRequired}
+                      disabled={field.disabled}
+                      readOnly={field.readonly}
+                    >
+                      <option value="">Select an option</option>
+                      {field.options.map((option, i) => (
+                        <option key={`${fieldId}-option-${i}`} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id={fieldId}
+                      type={field.type}
+                      name={field.name}
+                      value={formValues[field.name] ?? ''}
+                      onChange={(e) => onInputChange(field.name, e.target.value)}
+                      className="w-full border rounded p-2"
+                      required={isRequired}
+                      disabled={field.disabled}
+                      readOnly={field.readonly}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <button
+        onClick={() => console.log(formValues)}
+        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+      >
+        Submit
+      </button>
+    </div>
+  );
+});
 
 // JSON Preview Component to handle form data import
 const JsonPreview = ({ onImport }) => {
