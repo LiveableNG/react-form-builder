@@ -1,5 +1,221 @@
-import React, { useState } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { Trash2, Plus, Eye, EyeOff } from 'lucide-react';
+
+// Memoized input components
+const MemoizedFieldInput = memo(({ value, onChange, placeholder, className = "border rounded p-2" }) => (
+  <input
+    type="text"
+    placeholder={placeholder}
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className={className}
+  />
+));
+
+const MemoizedSelect = memo(({ value, onChange, options, className = "border rounded p-2" }) => (
+  <select
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className={className}
+  >
+    {options}
+  </select>
+));
+
+const MemoizedCheckbox = memo(({ checked, onChange, label }) => (
+  <label className="flex items-center">
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+      className="mr-2"
+    />
+    {label}
+  </label>
+));
+
+const FieldBuilder = memo(({ 
+  group, 
+  groupIndex, 
+  field, 
+  fieldIndex, 
+  onUpdateField,
+  onRemoveField,
+  onAddCondition,
+  onRemoveCondition 
+}) => {
+  const handleFieldChange = useCallback((key, value) => {
+    onUpdateField(groupIndex, fieldIndex, { ...field, [key]: value });
+  }, [groupIndex, fieldIndex, onUpdateField, field]);
+
+  // const handleRemoveField = useCallback(() => {
+  //   onRemoveField(groupIndex, fieldIndex);
+  // }, [groupIndex, fieldIndex, onRemoveField]);
+
+  // const handleAddCondition = useCallback((type) => {
+  //   onAddCondition(groupIndex, fieldIndex, type);
+  // }, [groupIndex, fieldIndex, onAddCondition]);
+
+  // const handleRemoveCondition = useCallback((type, conditionIndex) => {
+  //   onRemoveCondition(groupIndex, fieldIndex, type, conditionIndex);
+  // }, [groupIndex, fieldIndex, onRemoveCondition]);
+
+
+  return (
+    <div className="border p-4 rounded-lg mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <MemoizedFieldInput
+          value={field.name}
+          onChange={(value) => handleFieldChange('name', value)}
+          placeholder="Field name"
+        />
+        <MemoizedFieldInput
+          value={field.label}
+          onChange={(value) => handleFieldChange('label', value)}
+          placeholder="Label"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <MemoizedSelect
+          value={field.type}
+          onChange={(value) => handleFieldChange('type', value)}
+          options={<>
+            <option value="text">Text</option>
+            <option value="number">Number</option>
+            <option value="email">Email</option>
+            <option value="select">Select</option>
+          </>}
+        />
+      </div>
+
+      {field.type === 'select' && (
+        <div className="mb-4">
+          <MemoizedFieldInput
+            value={field.options.join(',')}
+            onChange={(value) => handleFieldChange('options', value.split(',').map(opt => opt.trim()))}
+            placeholder="Options (comma-separated)"
+            className="border rounded p-2 w-full"
+          />
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <MemoizedCheckbox
+          checked={field.required}
+          onChange={(checked) => handleFieldChange('required', checked)}
+          label="Required"
+        />
+        <MemoizedCheckbox
+          checked={field.disabled}
+          onChange={(checked) => handleFieldChange('disabled', checked)}
+          label="Disabled"
+        />
+        <MemoizedCheckbox
+          checked={field.readonly}
+          onChange={(checked) => handleFieldChange('readonly', checked)}
+          label="Readonly"
+        />
+        <MemoizedCheckbox
+          checked={field.visible}
+          onChange={(checked) => handleFieldChange('visible', checked)}
+          label="Visible"
+        />
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <h4 className="font-medium mb-2">Required If Conditions</h4>
+          {field.required_if.map((condition, conditionIndex) => (
+            <div key={conditionIndex} className="flex gap-2 mb-2">
+              <MemoizedFieldInput
+                value={condition.field}
+                onChange={(value) => handleConditionChange('required_if', conditionIndex, 'field', value)}
+                placeholder="Field name"
+                className="border rounded p-2 flex-1"
+              />
+              <MemoizedSelect
+                value={condition.operator}
+                onChange={(value) => handleConditionChange('required_if', conditionIndex, 'operator', value)}
+                options={<>
+                  <option value="equals">Equals</option>
+                  <option value="not_null">Not Null</option>
+                </>}
+              />
+              <MemoizedFieldInput
+                value={condition.value}
+                onChange={(value) => handleConditionChange('required_if', conditionIndex, 'value', value)}
+                placeholder="Value"
+                className="border rounded p-2 flex-1"
+              />
+              <button
+                onClick={() => onRemoveCondition(groupIndex, fieldIndex, 'required_if', conditionIndex)}
+                className="p-2 text-red-500 hover:text-red-700"
+              >
+                <Trash2 size={20} />
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => onAddCondition(groupIndex, fieldIndex, 'required_if')}
+            className="flex items-center text-blue-500 hover:text-blue-700"
+          >
+            <Plus size={20} className="mr-1" /> Add Condition
+          </button>
+        </div>
+
+        <div>
+          <h4 className="font-medium mb-2">Visible If Conditions</h4>
+          {field.visible_if.map((condition, conditionIndex) => (
+            <div key={conditionIndex} className="flex gap-2 mb-2">
+              <MemoizedFieldInput
+                value={condition.field}
+                onChange={(value) => handleConditionChange('visible_if', conditionIndex, 'field', value)}
+                placeholder="Field name"
+                className="border rounded p-2 flex-1"
+              />
+              <MemoizedSelect
+                value={condition.operator}
+                onChange={(value) => handleConditionChange('visible_if', conditionIndex, 'operator', value)}
+                options={<>
+                  <option value="equals">Equals</option>
+                  <option value="not_null">Not Null</option>
+                </>}
+              />
+              <MemoizedFieldInput
+                value={condition.value}
+                onChange={(value) => handleConditionChange('visible_if', conditionIndex, 'value', value)}
+                placeholder="Value"
+                className="border rounded p-2 flex-1"
+              />
+              <button
+                onClick={() => onRemoveCondition(groupIndex, fieldIndex, 'visible_if', conditionIndex)}
+                className="p-2 text-red-500 hover:text-red-700"
+              >
+                <Trash2 size={20} />
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => onAddCondition(groupIndex, fieldIndex, 'visible_if')}
+            className="flex items-center text-blue-500 hover:text-blue-700"
+          >
+            <Plus size={20} className="mr-1" /> Add Condition
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end">
+        <button
+          onClick={() => onRemoveField(groupIndex, fieldIndex)}
+          className="text-red-500 hover:text-red-700 flex items-center"
+        >
+          <Trash2 size={20} className="mr-1" /> Remove Field
+        </button>
+      </div>
+    </div>
+  );
+});
 
 const FormBuilder = () => {
   const [groups, setGroups] = useState([]);
@@ -27,31 +243,47 @@ const FormBuilder = () => {
     setGroups(newGroups);
   };
 
-  const updateField = (groupIndex, fieldIndex, field) => {
-    const newGroups = [...groups];
-    newGroups[groupIndex].fields[fieldIndex] = field;
-    setGroups(newGroups);
-  };
+  const updateField = useCallback((groupIndex, fieldIndex, field) => {
+    setGroups(prevGroups => {
+      const newGroups = [...prevGroups];
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        fields: [
+          ...newGroups[groupIndex].fields.slice(0, fieldIndex),
+          field,
+          ...newGroups[groupIndex].fields.slice(fieldIndex + 1)
+        ]
+      };
+      return newGroups;
+    });
+  }, []);
 
-  const removeField = (groupIndex, fieldIndex) => {
-    const newGroups = [...groups];
-    newGroups[groupIndex].fields.splice(fieldIndex, 1);
-    setGroups(newGroups);
-  };
 
-  const addCondition = (groupIndex, fieldIndex, type) => {
-    const newGroups = [...groups];
-    const field = newGroups[groupIndex].fields[fieldIndex];
-    field[type].push({ field: '', value: '', operator: 'equals' });
-    setGroups(newGroups);
-  };
+  const removeField = useCallback((groupIndex, fieldIndex) => {
+    setGroups(prevGroups => {
+      const newGroups = [...prevGroups];
+      newGroups[groupIndex].fields.splice(fieldIndex, 1);
+      return newGroups;
+    });
+  }, []);
 
-  const removeCondition = (groupIndex, fieldIndex, type, conditionIndex) => {
-    const newGroups = [...groups];
-    const field = newGroups[groupIndex].fields[fieldIndex];
-    field[type].splice(conditionIndex, 1);
-    setGroups(newGroups);
-  };
+  const addCondition = useCallback((groupIndex, fieldIndex, type) => {
+    setGroups(prevGroups => {
+      const newGroups = [...prevGroups];
+      const field = newGroups[groupIndex].fields[fieldIndex];
+      field[type].push({ field: '', value: '', operator: 'equals' });
+      return newGroups;
+    });
+  }, []);
+
+  const removeCondition = useCallback((groupIndex, fieldIndex, type, conditionIndex) => {
+    setGroups(prevGroups => {
+      const newGroups = [...prevGroups];
+      const field = newGroups[groupIndex].fields[fieldIndex];
+      field[type].splice(conditionIndex, 1);
+      return newGroups;
+    });
+  }, []);
 
   const FormPreview = () => {
     const checkConditions = (conditions, type) => {
@@ -134,213 +366,6 @@ const FormBuilder = () => {
     );
   };
 
-  const FieldBuilder = ({ group, groupIndex, field, fieldIndex }) => (
-    <div className="border p-4 rounded-lg mb-4">
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Field name"
-          value={field.name}
-          onChange={(e) => updateField(groupIndex, fieldIndex, { ...field, name: e.target.value })}
-          className="border rounded p-2"
-        />
-        <input
-          type="text"
-          placeholder="Label"
-          value={field.label}
-          onChange={(e) => updateField(groupIndex, fieldIndex, { ...field, label: e.target.value })}
-          className="border rounded p-2"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <select
-          value={field.type}
-          onChange={(e) => updateField(groupIndex, fieldIndex, { ...field, type: e.target.value })}
-          className="border rounded p-2"
-        >
-          <option value="text">Text</option>
-          <option value="number">Number</option>
-          <option value="email">Email</option>
-          <option value="select">Select</option>
-        </select>
-      </div>
-
-      {field.type === 'select' && (
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Options (comma-separated)"
-            value={field.options.join(',')}
-            onChange={(e) => updateField(groupIndex, fieldIndex, { 
-              ...field, 
-              options: e.target.value.split(',').map(opt => opt.trim())
-            })}
-            className="border rounded p-2 w-full"
-          />
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={field.required}
-            onChange={(e) => updateField(groupIndex, fieldIndex, { ...field, required: e.target.checked })}
-            className="mr-2"
-          />
-          Required
-        </label>
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={field.disabled}
-            onChange={(e) => updateField(groupIndex, fieldIndex, { ...field, disabled: e.target.checked })}
-            className="mr-2"
-          />
-          Disabled
-        </label>
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={field.readonly}
-            onChange={(e) => updateField(groupIndex, fieldIndex, { ...field, readonly: e.target.checked })}
-            className="mr-2"
-          />
-          Readonly
-        </label>
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={field.visible}
-            onChange={(e) => updateField(groupIndex, fieldIndex, { ...field, visible: e.target.checked })}
-            className="mr-2"
-          />
-          Visible
-        </label>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <h4 className="font-medium mb-2">Required If Conditions</h4>
-          {field.required_if.map((condition, conditionIndex) => (
-            <div key={conditionIndex} className="flex gap-2 mb-2">
-              <input
-                type="text"
-                placeholder="Field name"
-                value={condition.field}
-                onChange={(e) => {
-                  const newField = { ...field };
-                  newField.required_if[conditionIndex].field = e.target.value;
-                  updateField(groupIndex, fieldIndex, newField);
-                }}
-                className="border rounded p-2 flex-1"
-              />
-              <select
-                value={condition.operator}
-                onChange={(e) => {
-                  const newField = { ...field };
-                  newField.required_if[conditionIndex].operator = e.target.value;
-                  updateField(groupIndex, fieldIndex, newField);
-                }}
-                className="border rounded p-2"
-              >
-                <option value="equals">Equals</option>
-                <option value="not_null">Not Null</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Value"
-                value={condition.value}
-                onChange={(e) => {
-                  const newField = { ...field };
-                  newField.required_if[conditionIndex].value = e.target.value;
-                  updateField(groupIndex, fieldIndex, newField);
-                }}
-                className="border rounded p-2 flex-1"
-              />
-              <button
-                onClick={() => removeCondition(groupIndex, fieldIndex, 'required_if', conditionIndex)}
-                className="p-2 text-red-500 hover:text-red-700"
-              >
-                <Trash2 size={20} />
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={() => addCondition(groupIndex, fieldIndex, 'required_if')}
-            className="flex items-center text-blue-500 hover:text-blue-700"
-          >
-            <Plus size={20} className="mr-1" /> Add Condition
-          </button>
-        </div>
-
-        <div>
-          <h4 className="font-medium mb-2">Visible If Conditions</h4>
-          {field.visible_if.map((condition, conditionIndex) => (
-            <div key={conditionIndex} className="flex gap-2 mb-2">
-              <input
-                type="text"
-                placeholder="Field name"
-                value={condition.field}
-                onChange={(e) => {
-                  const newField = { ...field };
-                  newField.visible_if[conditionIndex].field = e.target.value;
-                  updateField(groupIndex, fieldIndex, newField);
-                }}
-                className="border rounded p-2 flex-1"
-              />
-              <select
-                value={condition.operator}
-                onChange={(e) => {
-                  const newField = { ...field };
-                  newField.visible_if[conditionIndex].operator = e.target.value;
-                  updateField(groupIndex, fieldIndex, newField);
-                }}
-                className="border rounded p-2"
-              >
-                <option value="equals">Equals</option>
-                <option value="not_null">Not Null</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Value"
-                value={condition.value}
-                onChange={(e) => {
-                  const newField = { ...field };
-                  newField.visible_if[conditionIndex].value = e.target.value;
-                  updateField(groupIndex, fieldIndex, newField);
-                }}
-                className="border rounded p-2 flex-1"
-              />
-              <button
-                onClick={() => removeCondition(groupIndex, fieldIndex, 'visible_if', conditionIndex)}
-                className="p-2 text-red-500 hover:text-red-700"
-              >
-                <Trash2 size={20} />
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={() => addCondition(groupIndex, fieldIndex, 'visible_if')}
-            className="flex items-center text-blue-500 hover:text-blue-700"
-          >
-            <Plus size={20} className="mr-1" /> Add Condition
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-4 flex justify-end">
-        <button
-          onClick={() => removeField(groupIndex, fieldIndex)}
-          className="text-red-500 hover:text-red-700 flex items-center"
-        >
-          <Trash2 size={20} className="mr-1" /> Remove Field
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between mb-6">
@@ -397,6 +422,10 @@ const FormBuilder = () => {
                   groupIndex={groupIndex}
                   field={field}
                   fieldIndex={fieldIndex}
+                  onUpdateField={updateField}
+                  onRemoveField={removeField}
+                  onAddCondition={addCondition}
+                  onRemoveCondition={removeCondition}
                 />
               ))}
             </div>
