@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState } from 'react';
-import { Trash2, Plus, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Plus, Eye, EyeOff, GripVertical } from 'lucide-react';
 
 const MemoizedFieldInput = memo(({ value, onChange, placeholder, className = "border rounded p-2" }) => (
   <input
@@ -48,8 +48,11 @@ const FieldBuilder = memo(({
   onUpdateField,
   onRemoveField,
   onAddCondition,
-  onRemoveCondition
+  onRemoveCondition,
+  onDragField
 }) => {
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
   const handleFieldChange = useCallback((key, value) => {
     if (key === 'label') {
       onUpdateField(groupIndex, fieldIndex, { 
@@ -61,6 +64,35 @@ const FieldBuilder = memo(({
       onUpdateField(groupIndex, fieldIndex, { ...field, [key]: value });
     }
   }, [groupIndex, fieldIndex, onUpdateField, field]);
+
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      groupIndex,
+      fieldIndex,
+    }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    
+    // Only reorder if dropping on a different field
+    if (data.groupIndex === groupIndex && data.fieldIndex !== fieldIndex) {
+      onDragField(data.fieldIndex, fieldIndex);
+    }
+  };
 
   const handleConditionChange = useCallback((type, conditionIndex, key, value) => {
     const newField = { ...field };
@@ -115,7 +147,23 @@ const FieldBuilder = memo(({
   ), [field, groupIndex, fieldIndex, handleConditionChange, onAddCondition, onRemoveCondition]);
 
   return (
-    <div className="border p-4 rounded-lg mb-4">
+    <div 
+      className={`border p-4 rounded-lg mb-4 transition-colors ${
+        isDraggingOver ? 'bg-blue-50 border-blue-300' : ''
+      }`}
+      draggable
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <GripVertical className="text-gray-400" size={20} />
+          <h3 className="font-medium">{field.label || 'New Field'}</h3>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4 mb-4">
         <MemoizedFieldInput
           value={field.label}
@@ -318,6 +366,21 @@ const FormBuilder = () => {
     setFormValues(prev => ({ ...prev, [name]: value }));
   }, []);
 
+  const handleDragField = useCallback((sourceIndex, targetIndex) => {
+    setGroups(prevGroups => {
+      return prevGroups.map((group, groupIndex) => {
+        const fields = [...group.fields];
+        const [movedField] = fields.splice(sourceIndex, 1);
+        fields.splice(targetIndex, 0, movedField);
+        
+        return {
+          ...group,
+          fields
+        };
+      });
+    });
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between mb-6">
@@ -396,6 +459,7 @@ const FormBuilder = () => {
                     onRemoveField={removeField}
                     onAddCondition={addCondition}
                     onRemoveCondition={removeCondition}
+                    onDragField={handleDragField}
                   />
                 ))}
               </div>
