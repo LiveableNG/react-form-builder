@@ -207,7 +207,11 @@ const FormBuilder = () => {
   }, []);
 
   const addGroup = () => {
-    setGroups([...groups, { name: `Group ${groups.length + 1}`, fields: [] }]);
+    setGroups([...groups, { 
+      name: `Group ${groups.length + 1}`, 
+      description: '',
+      fields: [] 
+    }]);
   };
 
   const addField = (groupIndex) => {
@@ -350,23 +354,36 @@ const FormBuilder = () => {
           <div className="space-y-6">
             {groups.map((group, groupIndex) => (
               <div key={groupIndex} className="border p-4 rounded-lg">
-                <div className="flex justify-between items-center mb-4">
-                  <input
-                    type="text"
-                    value={group.name}
+                <div className="space-y-3 mb-4">
+                  <div className="flex justify-between items-center">
+                    <input
+                      type="text"
+                      value={group.name}
+                      onChange={(e) => {
+                        const newGroups = [...groups];
+                        newGroups[groupIndex].name = e.target.value;
+                        setGroups(newGroups);
+                      }}
+                      className="text-lg font-semibold border-none focus:outline-none"
+                    />
+                    <button
+                      onClick={() => addField(groupIndex)}
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center"
+                    >
+                      <Plus size={20} className="mr-1" /> Add Field
+                    </button>
+                  </div>
+                  <textarea
+                    value={group.description || ''}
                     onChange={(e) => {
                       const newGroups = [...groups];
-                      newGroups[groupIndex].name = e.target.value;
+                      newGroups[groupIndex].description = e.target.value;
                       setGroups(newGroups);
                     }}
-                    className="text-lg font-semibold border-none focus:outline-none"
+                    placeholder="Add group description (optional)"
+                    className="w-full border rounded-md p-2 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    rows={2}
                   />
-                  <button
-                    onClick={() => addField(groupIndex)}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center"
-                  >
-                    <Plus size={20} className="mr-1" /> Add Field
-                  </button>
                 </div>
                 {group.fields.map((field, fieldIndex) => (
                   <FieldBuilder
@@ -424,7 +441,10 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
     <div className="space-y-6">
       {groups.map((group, groupIndex) => (
         <div key={`group-${group.name}-${groupIndex}`} className="border p-4 rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">{group.name}</h3>
+          <h3 className="text-lg font-semibold mb-2">{group.name}</h3>
+          {group.description && (
+            <p className="text-gray-600 text-sm mb-4">{group.description}</p>
+          )}
           <div className="space-y-4">
             {group.fields.map((field, fieldIndex) => {
               const isVisible = checkConditions(field.visible_if, 'visible');
