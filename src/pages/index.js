@@ -487,6 +487,7 @@ const FormBuilder = () => {
 
 const FormPreview = memo(({ groups, formValues, onInputChange }) => {
   const [currentPage, setCurrentPage] = useState(0);
+  const [errors, setErrors] = useState({});
 
   const checkConditions = useCallback((conditions, type) => {
     if (!conditions.length) return type === 'visible';
@@ -503,8 +504,70 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
     });
   }, [formValues]);
 
+  // Validate a single field
+  const validateField = useCallback((field) => {
+    const errors = [];
+    const value = formValues[field.name];
+
+    // Check if field is visible based on conditions
+    const isVisible = checkConditions(field.visible_if, 'visible');
+    if (!isVisible) return errors;
+
+    // Check required validation
+    const isRequired = field.required || checkConditions(field.required_if, 'required');
+    if (isRequired && (value === undefined || value === '' || value === null)) {
+      errors.push('This field is required');
+    }
+
+    // Type-specific validation
+    if (value) {
+      switch (field.type) {
+        case 'email':
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            errors.push('Invalid email format');
+          }
+          break;
+        case 'number':
+          if (isNaN(value)) {
+            errors.push('Must be a valid number');
+          }
+          break;
+        case 'file':
+          if (field.maxSize && value.size > field.maxSize) {
+            errors.push(`File size must be less than ${field.maxSize / 1024 / 1024}MB`);
+          }
+          if (field.accept && !field.accept.split(',').some(type => 
+            value.type.match(new RegExp(type.replace('*', '.*')))
+          )) {
+            errors.push('Invalid file type');
+          }
+          break;
+      }
+    }
+
+    return errors;
+  }, [formValues, checkConditions]);
+
+  // Validate current page
+  const validateCurrentPage = useCallback(() => {
+    const currentGroup = groups[currentPage];
+    const newErrors = {};
+    let hasErrors = false;
+
+    currentGroup.fields.forEach(field => {
+      const fieldErrors = validateField(field);
+      if (fieldErrors.length > 0) {
+        newErrors[field.name] = fieldErrors;
+        hasErrors = true;
+      }
+    });
+
+    setErrors(newErrors);
+    return !hasErrors;
+  }, [currentPage, groups, validateField]);
+
   const handleNext = () => {
-    if (currentPage < groups.length - 1) {
+    if (validateCurrentPage() && currentPage < groups.length - 1) {
       setCurrentPage(curr => curr + 1);
     }
   };
@@ -515,7 +578,14 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
     }
   };
 
-  // Show only the current group
+  const handleSubmit = () => {
+    if (validateCurrentPage()) {
+      console.log(formValues);
+      // Add your submit logic here
+    }
+  };
+
+  // Current group content
   const currentGroup = groups[currentPage];
   
   return (
@@ -552,6 +622,7 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
             const isVisible = checkConditions(field.visible_if, 'visible');
             const isRequired = field.required || checkConditions(field.required_if, 'required');
             const fieldId = `${currentGroup.name}-${field.name}-${fieldIndex}`;
+            const fieldErrors = errors[field.name];
 
             if (!isVisible) return null;
 
@@ -566,8 +637,14 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
                     id={fieldId}
                     name={field.name}
                     value={formValues[field.name] ?? ''}
-                    onChange={(e) => onInputChange(field.name, e.target.value)}
-                    className="w-full border rounded p-2"
+                    onChange={(e) => {
+                      onInputChange(field.name, e.target.value);
+                      // Clear error when user starts typing
+                      if (errors[field.name]) {
+                        setErrors(prev => ({ ...prev, [field.name]: undefined }));
+                      }
+                    }}
+                    className={`w-full border rounded p-2 ${fieldErrors ? 'border-red-500' : ''}`}
                     required={isRequired}
                     disabled={field.disabled}
                     readOnly={field.readonly}
@@ -586,7 +663,12 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
                           name={field.name}
                           value={option}
                           checked={formValues[field.name] === option}
-                          onChange={(e) => onInputChange(field.name, e.target.value)}
+                          onChange={(e) => {
+                            onInputChange(field.name, e.target.value);
+                            if (errors[field.name]) {
+                              setErrors(prev => ({ ...prev, [field.name]: undefined }));
+                            }
+                          }}
                           required={isRequired}
                           disabled={field.disabled}
                         />
@@ -600,8 +682,13 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
                     type="checkbox"
                     name={field.name}
                     checked={formValues[field.name] || false}
-                    onChange={(e) => onInputChange(field.name, e.target.checked)}
-                    className="rounded border-gray-300"
+                    onChange={(e) => {
+                      onInputChange(field.name, e.target.checked);
+                      if (errors[field.name]) {
+                        setErrors(prev => ({ ...prev, [field.name]: undefined }));
+                      }
+                    }}
+                    className={`rounded border-gray-300 ${fieldErrors ? 'border-red-500' : ''}`}
                     required={isRequired}
                     disabled={field.disabled}
                   />
@@ -610,23 +697,16 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
                     id={fieldId}
                     type="file"
                     name={field.name}
-                    onChange={(e) => onInputChange(field.name, e.target.files[0])}
-                    className="w-full"
+                    onChange={(e) => {
+                      onInputChange(field.name, e.target.files[0]);
+                      if (errors[field.name]) {
+                        setErrors(prev => ({ ...prev, [field.name]: undefined }));
+                      }
+                    }}
+                    className={`w-full ${fieldErrors ? 'border-red-500' : ''}`}
                     required={isRequired}
                     disabled={field.disabled}
                     accept={field.accept || '*/*'}
-                  />
-                ) : field.type === 'date' ? (
-                  <input
-                    id={fieldId}
-                    type="date"
-                    name={field.name}
-                    value={formValues[field.name] ?? ''}
-                    onChange={(e) => onInputChange(field.name, e.target.value)}
-                    className="w-full border rounded p-2"
-                    required={isRequired}
-                    disabled={field.disabled}
-                    readOnly={field.readonly}
                   />
                 ) : (
                   <input
@@ -634,13 +714,23 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
                     type={field.type}
                     name={field.name}
                     value={formValues[field.name] ?? ''}
-                    onChange={(e) => onInputChange(field.name, e.target.value)}
-                    className="w-full border rounded p-2"
+                    onChange={(e) => {
+                      onInputChange(field.name, e.target.value);
+                      if (errors[field.name]) {
+                        setErrors(prev => ({ ...prev, [field.name]: undefined }));
+                      }
+                    }}
+                    className={`w-full border rounded p-2 ${fieldErrors ? 'border-red-500' : ''}`}
                     required={isRequired}
                     disabled={field.disabled}
                     readOnly={field.readonly}
                   />
                 )}
+                {fieldErrors && fieldErrors.map((error, index) => (
+                  <p key={index} className="text-red-500 text-sm mt-1">
+                    {error}
+                  </p>
+                ))}
               </div>
             );
           })}
@@ -663,7 +753,7 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
         
         {currentPage === groups.length - 1 ? (
           <button
-            onClick={() => console.log(formValues)}
+            onClick={handleSubmit}
             className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
           >
             Submit
