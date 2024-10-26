@@ -133,11 +133,15 @@ const FieldBuilder = memo(({
             <option value="number">Number</option>
             <option value="email">Email</option>
             <option value="select">Select</option>
+            <option value="file">File Upload</option>
+            <option value="radio">Radio</option>
+            <option value="checkbox">Checkbox</option>
+            <option value="date">Calendar</option>
           </>}
         />
       </div>
 
-      {field.type === 'select' && (
+      {(field.type === 'select' || field.type === 'radio') && (
         <div className="mb-4">
           <MemoizedFieldInput
             value={field.options.join(',')}
@@ -218,7 +222,8 @@ const FormBuilder = () => {
       visible: true,
       options: [],
       required_if: [],
-      visible_if: []
+      visible_if: [],
+      accept: '*/*', // for file input
     });
     setGroups(newGroups);
   };
@@ -450,6 +455,57 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
                         <option key={`${fieldId}-option-${i}`} value={option}>{option}</option>
                       ))}
                     </select>
+                  ) : field.type === 'radio' ? (
+                    <div className="space-y-2">
+                      {field.options.map((option, i) => (
+                        <label key={`${fieldId}-option-${i}`} className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            name={field.name}
+                            value={option}
+                            checked={formValues[field.name] === option}
+                            onChange={(e) => onInputChange(field.name, e.target.value)}
+                            required={isRequired}
+                            disabled={field.disabled}
+                          />
+                          <span>{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : field.type === 'checkbox' ? (
+                    <input
+                      id={fieldId}
+                      type="checkbox"
+                      name={field.name}
+                      checked={formValues[field.name] || false}
+                      onChange={(e) => onInputChange(field.name, e.target.checked)}
+                      className="rounded border-gray-300"
+                      required={isRequired}
+                      disabled={field.disabled}
+                    />
+                  ) : field.type === 'file' ? (
+                    <input
+                      id={fieldId}
+                      type="file"
+                      name={field.name}
+                      onChange={(e) => onInputChange(field.name, e.target.files[0])}
+                      className="w-full"
+                      required={isRequired}
+                      disabled={field.disabled}
+                      accept={field.accept || '*/*'}
+                    />
+                  ) : field.type === 'date' ? (
+                    <input
+                      id={fieldId}
+                      type="date"
+                      name={field.name}
+                      value={formValues[field.name] ?? ''}
+                      onChange={(e) => onInputChange(field.name, e.target.value)}
+                      className="w-full border rounded p-2"
+                      required={isRequired}
+                      disabled={field.disabled}
+                      readOnly={field.readonly}
+                    />
                   ) : (
                     <input
                       id={fieldId}
@@ -625,7 +681,19 @@ const validateField = (field, formValues) => {
         errors.push('Must be a valid number');
       }
       break;
-    // Add more type-specific validation as needed
+    case 'file':
+      if (formValues[field.name]) {
+        const file = formValues[field.name];
+        if (field.maxSize && file.size > field.maxSize) {
+          errors.push('File size exceeds maximum allowed');
+        }
+        if (field.accept && !field.accept.split(',').some(type => 
+          file.type.match(new RegExp(type.replace('*', '.*')))
+        )) {
+          errors.push('Invalid file type');
+        }
+      }
+      break;
   }
 
   return errors;
