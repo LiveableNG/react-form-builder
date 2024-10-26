@@ -1,5 +1,42 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Trash2, Plus, Eye, EyeOff, GripVertical } from 'lucide-react';
+
+// Field definitions configuration
+const AVAILABLE_FIELDS = [
+  // Personal Information
+  'first_name',
+  'last_name',
+  'email',
+  'phone',
+  'corporate_name',
+
+  // Work Information
+  'official_email',
+  'company_name',
+  'company_address',
+  'position',
+  'annual_salary',
+  'supervisor_name',
+  'supervisor_phone',
+  'supervisor_email',
+
+  // Net of Kin
+  'next_kin_name',
+  'next_kin_email',
+  'next_kin_phone',
+
+  // Personal details
+  'dob', 
+  'current_home_address',
+  'gender',
+  'marital_status',
+  'additional_phone',
+
+  // Guarantor
+  'guarantor_name',
+  'guarantor_phone',
+  'guarantor_email',
+];
 
 const MemoizedFieldInput = memo(({ value, onChange, placeholder, className = "border rounded p-2" }) => (
   <input
@@ -49,12 +86,37 @@ const FieldBuilder = memo(({
   onRemoveField,
   onAddCondition,
   onRemoveCondition,
-  onDragField
+  onDragField,
+  availableFields = AVAILABLE_FIELDS
 }) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsRef = useRef(null);
+
+  // Format snake_case to Title Case
+  const formatFieldName = useCallback((fieldName) => {
+    return fieldName
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }, []);
+
+  // Filter suggestions based on input
+  const getSuggestions = useCallback((input) => {
+    const inputValue = input.toLowerCase();
+    return availableFields.filter(field => 
+      formatFieldName(field).toLowerCase().includes(inputValue) ||
+      field.includes(inputValue)
+    );
+  }, [availableFields, formatFieldName]);
 
   const handleFieldChange = useCallback((key, value) => {
     if (key === 'label') {
+      const filteredSuggestions = getSuggestions(value);
+      setSuggestions(filteredSuggestions);
+      setShowSuggestions(filteredSuggestions.length > 0);
+
       onUpdateField(groupIndex, fieldIndex, { 
         ...field, 
         label: value,
@@ -63,7 +125,29 @@ const FieldBuilder = memo(({
     } else {
       onUpdateField(groupIndex, fieldIndex, { ...field, [key]: value });
     }
-  }, [groupIndex, fieldIndex, onUpdateField, field]);
+  }, [groupIndex, fieldIndex, onUpdateField, field, getSuggestions]);
+
+  const handleSuggestionClick = useCallback((suggestion) => {
+    const formattedLabel = formatFieldName(suggestion);
+    onUpdateField(groupIndex, fieldIndex, { 
+      ...field, 
+      label: formattedLabel,
+      name: suggestion
+    });
+    setShowSuggestions(false);
+  }, [field, groupIndex, fieldIndex, onUpdateField, formatFieldName]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleDragStart = (e) => {
     e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -165,11 +249,29 @@ const FieldBuilder = memo(({
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <MemoizedFieldInput
-          value={field.label}
-          onChange={(value) => handleFieldChange('label', value)}
-          placeholder="Label"
-        />
+        <div className="relative" ref={suggestionsRef}>
+          <input
+            type="text"
+            placeholder="Label"
+            value={field.label || ''}
+            onChange={(e) => handleFieldChange('label', e.target.value)}
+            className="w-full border rounded p-2"
+          />
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow-lg max-h-48 overflow-auto">
+              {suggestions.map((suggestion, index) => (
+                <li
+                  key={index}
+                  className="px-3 py-2 hover:bg-blue-50 cursor-pointer flex justify-between items-center"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  <span className="font-medium">{formatFieldName(suggestion)}</span>
+                  <span className="text-sm text-gray-500">{suggestion}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
