@@ -486,6 +486,203 @@ const FormBuilder = () => {
 };
 
 const FormPreview = memo(({ groups, formValues, onInputChange }) => {
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const checkConditions = useCallback((conditions, type) => {
+    if (!conditions.length) return type === 'visible';
+    return conditions.every(condition => {
+      const fieldValue = formValues[condition.field];
+      switch (condition.operator) {
+        case 'equals':
+          return fieldValue === condition.value;
+        case 'not_null':
+          return fieldValue != null && fieldValue !== '';
+        default:
+          return true;
+      }
+    });
+  }, [formValues]);
+
+  const handleNext = () => {
+    if (currentPage < groups.length - 1) {
+      setCurrentPage(curr => curr + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentPage > 0) {
+      setCurrentPage(curr => curr - 1);
+    }
+  };
+
+  // Show only the current group
+  const currentGroup = groups[currentPage];
+  
+  return (
+    <div className="space-y-6">
+      {/* Progress indicator */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-sm text-gray-600">
+          Page {currentPage + 1} of {groups.length}
+        </div>
+        <div className="flex gap-2">
+          {Array.from({ length: groups.length }).map((_, index) => (
+            <div
+              key={index}
+              className={`h-2 w-8 rounded ${
+                index === currentPage
+                  ? 'bg-blue-500'
+                  : index < currentPage
+                  ? 'bg-blue-200'
+                  : 'bg-gray-200'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Current group content */}
+      <div className="border p-4 rounded-lg">
+        <h3 className="text-lg font-semibold mb-2">{currentGroup.name}</h3>
+        {currentGroup.description && (
+          <p className="text-gray-600 text-sm mb-4">{currentGroup.description}</p>
+        )}
+        <div className="space-y-4">
+          {currentGroup.fields.map((field, fieldIndex) => {
+            const isVisible = checkConditions(field.visible_if, 'visible');
+            const isRequired = field.required || checkConditions(field.required_if, 'required');
+            const fieldId = `${currentGroup.name}-${field.name}-${fieldIndex}`;
+
+            if (!isVisible) return null;
+
+            return (
+              <div key={fieldId} className="space-y-2">
+                <label htmlFor={fieldId} className="block text-sm font-medium">
+                  {field.label}
+                  {isRequired && <span className="text-red-500">*</span>}
+                </label>
+                {field.type === 'select' ? (
+                  <select
+                    id={fieldId}
+                    name={field.name}
+                    value={formValues[field.name] ?? ''}
+                    onChange={(e) => onInputChange(field.name, e.target.value)}
+                    className="w-full border rounded p-2"
+                    required={isRequired}
+                    disabled={field.disabled}
+                    readOnly={field.readonly}
+                  >
+                    <option value="">Select an option</option>
+                    {field.options.map((option, i) => (
+                      <option key={`${fieldId}-option-${i}`} value={option}>{option}</option>
+                    ))}
+                  </select>
+                ) : field.type === 'radio' ? (
+                  <div className="space-y-2">
+                    {field.options.map((option, i) => (
+                      <label key={`${fieldId}-option-${i}`} className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          name={field.name}
+                          value={option}
+                          checked={formValues[field.name] === option}
+                          onChange={(e) => onInputChange(field.name, e.target.value)}
+                          required={isRequired}
+                          disabled={field.disabled}
+                        />
+                        <span>{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : field.type === 'checkbox' ? (
+                  <input
+                    id={fieldId}
+                    type="checkbox"
+                    name={field.name}
+                    checked={formValues[field.name] || false}
+                    onChange={(e) => onInputChange(field.name, e.target.checked)}
+                    className="rounded border-gray-300"
+                    required={isRequired}
+                    disabled={field.disabled}
+                  />
+                ) : field.type === 'file' ? (
+                  <input
+                    id={fieldId}
+                    type="file"
+                    name={field.name}
+                    onChange={(e) => onInputChange(field.name, e.target.files[0])}
+                    className="w-full"
+                    required={isRequired}
+                    disabled={field.disabled}
+                    accept={field.accept || '*/*'}
+                  />
+                ) : field.type === 'date' ? (
+                  <input
+                    id={fieldId}
+                    type="date"
+                    name={field.name}
+                    value={formValues[field.name] ?? ''}
+                    onChange={(e) => onInputChange(field.name, e.target.value)}
+                    className="w-full border rounded p-2"
+                    required={isRequired}
+                    disabled={field.disabled}
+                    readOnly={field.readonly}
+                  />
+                ) : (
+                  <input
+                    id={fieldId}
+                    type={field.type}
+                    name={field.name}
+                    value={formValues[field.name] ?? ''}
+                    onChange={(e) => onInputChange(field.name, e.target.value)}
+                    className="w-full border rounded p-2"
+                    required={isRequired}
+                    disabled={field.disabled}
+                    readOnly={field.readonly}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Navigation buttons */}
+      <div className="flex justify-between mt-6">
+        <button
+          onClick={handlePrevious}
+          disabled={currentPage === 0}
+          className={`px-4 py-2 rounded ${
+            currentPage === 0
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-blue-500 hover:bg-blue-600 text-white'
+          }`}
+        >
+          Previous
+        </button>
+        
+        {currentPage === groups.length - 1 ? (
+          <button
+            onClick={() => console.log(formValues)}
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          >
+            Submit
+          </button>
+        ) : (
+          <button
+            onClick={handleNext}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Next
+          </button>
+        )}
+      </div>
+    </div>
+  );
+});
+
+/**
+ * const FormPreview = memo(({ groups, formValues, onInputChange }) => {
   const checkConditions = useCallback((conditions, type) => {
     if (!conditions.length) return type === 'visible';
     return conditions.every(condition => {
@@ -576,48 +773,49 @@ const FormPreview = memo(({ groups, formValues, onInputChange }) => {
                       className="w-full"
                       required={isRequired}
                       disabled={field.disabled}
-                      accept={field.accept || '*/*'}
-                    />
-                  ) : field.type === 'date' ? (
-                    <input
-                      id={fieldId}
-                      type="date"
-                      name={field.name}
-                      value={formValues[field.name] ?? ''}
-                      onChange={(e) => onInputChange(field.name, e.target.value)}
-                      className="w-full border rounded p-2"
-                      required={isRequired}
-                      disabled={field.disabled}
-                      readOnly={field.readonly}
-                    />
-                  ) : (
-                    <input
-                      id={fieldId}
-                      type={field.type}
-                      name={field.name}
-                      value={formValues[field.name] ?? ''}
-                      onChange={(e) => onInputChange(field.name, e.target.value)}
-                      className="w-full border rounded p-2"
-                      required={isRequired}
-                      disabled={field.disabled}
-                      readOnly={field.readonly}
-                    />
-                  )}
-                </div>
-              );
-            })}
+                      accept={field.accept || '*`/*'}
+                      />
+                    ) : field.type === 'date' ? (
+                      <input
+                        id={fieldId}
+                        type="date"
+                        name={field.name}
+                        value={formValues[field.name] ?? ''}
+                        onChange={(e) => onInputChange(field.name, e.target.value)}
+                        className="w-full border rounded p-2"
+                        required={isRequired}
+                        disabled={field.disabled}
+                        readOnly={field.readonly}
+                      />
+                    ) : (
+                      <input
+                        id={fieldId}
+                        type={field.type}
+                        name={field.name}
+                        value={formValues[field.name] ?? ''}
+                        onChange={(e) => onInputChange(field.name, e.target.value)}
+                        className="w-full border rounded p-2"
+                        required={isRequired}
+                        disabled={field.disabled}
+                        readOnly={field.readonly}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
-      <button
-        onClick={() => console.log(formValues)}
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      >
-        Submit
-      </button>
-    </div>
-  );
-});
+        ))}
+        <button
+          onClick={() => console.log(formValues)}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Submit
+        </button>
+      </div>
+    );
+  });
+ */
 
 const JsonPreview = memo(({ onImport }) => {
   const [jsonInput, setJsonInput] = useState('');
