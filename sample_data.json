@@ -1,0 +1,541 @@
+[
+  {
+    "name": "Basic Info",
+    "fields": [
+      {
+        "name": "first_name",
+        "type": "text",
+        "label": "First Name",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "last_name",
+        "type": "text",
+        "label": "Last Name",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "email_addess",
+        "type": "email",
+        "label": "Email Addess",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "phone_number",
+        "type": "number",
+        "label": "Phone Number",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "occupation",
+        "type": "select",
+        "label": "Occupation",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          "Employee",
+          "Entrepreneur/Business Owner"
+        ],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "type_of_business",
+        "type": "text",
+        "label": "Type of Business",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "Occupation",
+            "value": "Entrepreneur/Business Owner",
+            "operator": "equals"
+          }
+        ]
+      },
+      {
+        "name": "previous_landlordcaretaker_phone_number",
+        "type": "text",
+        "label": "Previous Landlord/Caretaker Phone Number",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "address_of_previously_rented_apartment",
+        "type": "text",
+        "label": "Address of previously rented apartment",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "who_will_you_be_living_with",
+        "type": "select",
+        "label": "Who will you be living with",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          "Family (Married)",
+          "Alone",
+          "Partner",
+          "Friends",
+          "Relatives"
+        ],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "do_you_own_pets",
+        "type": "select",
+        "label": "Do you own pets?",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "required_if": [],
+        "visible_if": []
+      }
+    ]
+  },
+  {
+    "name": "Work Info",
+    "fields": [
+      {
+        "name": "where_do_you_work",
+        "type": "text",
+        "label": "Where do you work?",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "occupation",
+            "value": "Employee",
+            "operator": "equals"
+          }
+        ]
+      },
+      {
+        "name": "do_you_have_a_work_email",
+        "type": "select",
+        "label": "Do you have a work email?",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "occupation",
+            "value": "Employee",
+            "operator": "equals"
+          }
+        ]
+      },
+      {
+        "name": "enter_your_work_email",
+        "type": "email",
+        "label": "Enter your work email:",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          ""
+        ],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "do_you_have_a_work_email",
+            "value": "Yes",
+            "operator": "equals"
+          },
+          {
+            "field": "occupation",
+            "value": "Employee",
+            "operator": "equals"
+          }
+        ]
+      },
+      {
+        "name": "work_position",
+        "type": "text",
+        "label": "Work Position",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "occupation",
+            "value": "Employee",
+            "operator": "equals"
+          }
+        ]
+      },
+      {
+        "name": "business_name",
+        "type": "text",
+        "label": "Business name",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "occupation",
+            "value": "Entrepreneur/Business Owner",
+            "operator": "equals"
+          }
+        ]
+      },
+      {
+        "name": "business_address",
+        "type": "text",
+        "label": "Business address",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "occupation",
+            "value": "Entrepreneur/Business Owner",
+            "operator": "equals"
+          }
+        ]
+      },
+      {
+        "name": "official_linkedin_url",
+        "type": "text",
+        "label": "Official Linkedin URL",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "occupation",
+            "value": "Entrepreneur/Business Owner",
+            "operator": "equals"
+          }
+        ]
+      },
+      {
+        "name": "other_social_media_platforms",
+        "type": "text",
+        "label": "Other social media platforms",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "occupation",
+            "value": "Entrepreneur/Business Owner",
+            "operator": "equals"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Property Info",
+    "fields": [
+      {
+        "name": "location",
+        "type": "text",
+        "label": "Location",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "type",
+        "type": "select",
+        "label": "Type",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          "Flat/Apartment",
+          "Studio",
+          "Duplex",
+          "Bungalow",
+          "Terrace House",
+          "Town House",
+          "2 Bedroom Flat"
+        ],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "number_of_rooms",
+        "type": "text",
+        "label": "Number of rooms",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      }
+    ]
+  },
+  {
+    "name": "Referee Info",
+    "fields": [
+      {
+        "name": "next_of_kin_full_name",
+        "type": "text",
+        "label": "Next of kin full name",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "next_of_kin_relationship",
+        "type": "select",
+        "label": "Next of kin Relationship",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          "parent",
+          "sibling",
+          "friend",
+          "relative"
+        ],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "next_of_kin_phone_number",
+        "type": "number",
+        "label": "Next of kin phone number",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "referee_full_name",
+        "type": "text",
+        "label": "Referee Full Name",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "what_best_describes_your_referee",
+        "type": "text",
+        "label": "What best describes your referee?",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "referee_work_email",
+        "type": "email",
+        "label": "Referee Work Email",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "referee_phone_number",
+        "type": "number",
+        "label": "Referee Phone Number",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      }
+    ]
+  },
+  {
+    "name": "Financial Info",
+    "fields": [
+      {
+        "name": "bank_name",
+        "type": "select",
+        "label": "Bank Name",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          "Providus Bank",
+          "GTB",
+          "Kuda Bank",
+          "Access Bank"
+        ],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "account_number_preferrably_that_of_salary_account",
+        "type": "number",
+        "label": "Account Number (Preferrably that of salary account)",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "account_name",
+        "type": "text",
+        "label": "Account Name",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "account_type",
+        "type": "select",
+        "label": "Account Type",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          "Current",
+          "Savings"
+        ],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "is_bank_statement_passworded",
+        "type": "select",
+        "label": "Is Bank Statement Passworded?",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "required_if": [],
+        "visible_if": []
+      },
+      {
+        "name": "enter_bank_statement_password",
+        "type": "text",
+        "label": "Enter bank statement password",
+        "required": false,
+        "disabled": false,
+        "readonly": false,
+        "visible": true,
+        "options": [],
+        "required_if": [],
+        "visible_if": [
+          {
+            "field": "Is Bank Statement Passworded?",
+            "value": "Yes",
+            "operator": "equals"
+          }
+        ]
+      }
+    ]
+  }
+]
